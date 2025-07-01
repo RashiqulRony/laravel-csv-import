@@ -1,0 +1,42 @@
+{
+    "name": "rashiqulrony/laravel-csv-import",
+    "description": "Import Very Large CSV Without File Store and Chunk Upload system \nLaravel package to export and import CSV files in a memory-optimized way",
+
+    "keywords": [
+        "RashiqulRony",
+        "laravel csv",
+        "csv package",
+        "laravel csv import",
+        "csv import",
+        "Upload system",
+        "csv to array"
+    ],
+    "type": "package",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Rashiqulrony\\CSVImport\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Rashiqul Rony",
+            "email": "rashiqulrony@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "^7.0|^8.0",
+        "laravel/framework": "^7.0|^8.0|^9.0|^10.0|^11.0|^12.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Rashiqulrony\\CSVImport\\Providers\\AppServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
