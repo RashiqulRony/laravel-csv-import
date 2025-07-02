@@ -9,10 +9,10 @@ class CSVUpload
     public static function upload($file)
     {
         $path = $file->getRealPath();
-        $chunkSize = config('csvimport.chunk_size');
+        $chunkSize = config('csvimport.chunk_size', 1000); // Default to 1000 if not set
 
         $header = null;
-        $dataChunk = [];
+        $dataChunks = [];
 
         try {
             // Detect encoding
@@ -27,63 +27,63 @@ class CSVUpload
             $utf8Content = mb_convert_encoding($originalContent, 'UTF-8', $encoding);
 
             // Save to temporary UTF-8 file
-            $tempPath = storage_path('app/temp_utf8.csv');
+            $tempPath = storage_path('app/temp_utf8_' . uniqid() . '.csv');
             file_put_contents($tempPath, $utf8Content);
 
-            if (($handle = fopen($tempPath, 'r')) !== false) {
-                while (($row = fgetcsv($handle, 200, ',')) !== false) {
-                    $row = array_map(function ($value) {
-                        return trim(mb_convert_encoding($value, 'UTF-8', 'UTF-8'));
-                    }, $row);
+            if (($handle = fopen($tempPath, 'r')) === false) {
+                return [
+                    'status' => false,
+                    'message' => 'Upload failed: Could not open the file.'
+                ];
+            }
 
-                    // Set and clean header
-                    if (!$header) {
-                        $header = array_map(function ($value) {
-                            return strtolower(trim(preg_replace('/^\xEF\xBB\xBF/', '', $value)));
-                        }, $row);
-                        continue;
-                    }
+            $dataChunk = [];
+            while (($row = fgetcsv($handle, 0, ',')) !== false) {
+                $row = array_map(fn($value) => trim(mb_convert_encoding($value, 'UTF-8', 'UTF-8')), $row);
 
-                    if (count($row) !== count($header)) {
-                        continue;
-                    }
+                if (!$header) {
+                    $header = array_map(fn($value) => strtolower(trim($value)), $row);
 
-                    $rowData = array_combine($header, $row);
+                    // Remove UTF-8 BOM from first column only
+                    $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
 
-                    if (empty($rowData)) {
-                        continue;
-                    }
-
-                    $dataChunk[] = $rowData;
-
-                    if (count($dataChunk) === $chunkSize) {
-                        fclose($handle);
-                        unlink($tempPath);
-                        return $dataChunk;
-                    }
+                    continue;
                 }
 
-                fclose($handle);
-                unlink($tempPath);
+                if (count($row) !== count($header)) {
+                    continue; // Skip malformed row
+                }
 
-                if (!empty($dataChunk)) {
-                    return $dataChunk;
-                } else {
-                    return [
-                        'status' => false,
-                        'message' => 'File Error: ' . 'File will be UTF-8 format.'
-                    ];
+                $dataChunk[] = array_combine($header, $row);
+
+                // When chunk size reached, store and reset
+                if (count($dataChunk) >= $chunkSize) {
+                    $dataChunks[] = $dataChunk;
+                    $dataChunk = [];
                 }
             }
 
+            // Add the last chunk if it has remaining data
+            if (!empty($dataChunk)) {
+                $dataChunks[] = $dataChunk;
+            }
+
+            fclose($handle);
+            unlink($tempPath);
+
+            if (empty($dataChunks)) {
+                return [
+                    'status' => false,
+                    'message' => 'File Error: Could not extract data.'
+                ];
+            }
+
+            return $dataChunks;
+
+        } catch (\Exception $e) {
             return [
                 'status' => false,
-                'message' => 'Upload failed: ' . 'Could not open the file.'
-            ];
-        } catch (\Exception $exception) {
-            return [
-                'status' => false,
-                'message' => 'Upload failed: ' . $exception->getMessage()
+                'message' => 'Upload failed: ' . $e->getMessage()
             ];
         }
     }

@@ -36,7 +36,7 @@ return [
 # 🚀 Usage
 ## ✅ Basic Example
 ```php
-use Rashiqulrony\CSVImport\CSVImport;
+use Rashiqulrony\CSVImport;
 
 public function upload(Request $request)
 {
@@ -45,15 +45,17 @@ public function upload(Request $request)
     ]);
 
     $result = CSVImport::upload($request->file('file'));
-
-    if (isset($result['status']) && !$result['status']) {
-        return back()->with('error', $result['message']);
+    
+    if (!empty($result) && is_array($result)) {
+         foreach ($result as $key => $value) {
+              foreach ($result[$key] as $data) {
+                 // Process or save the row (e.g. DB::table(...)->insert($row))
+              }
+         }
+    } else {
+         return back()->with('error', 'Data not found or invalid file.');
     }
-
-    foreach ($result as $row) {
-        // Process or save the row (e.g. DB::table(...)->insert($row))
-    }
-
+        
     return back()->with('success', 'CSV imported successfully!');
 }
 ```
