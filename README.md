@@ -25,7 +25,7 @@ If you're using Laravel <5.5 or your Laravel version doesn't support package aut
 ## ⚙️ Configuration
 ###### Publish the config file (optional):
 ```bash
-php artisan vendor:publish --tag=csv-import-config
+php artisan vendor:publish --provider="Rashiqulrony\CSVImport\Providers\AppServiceProvider" --tag=config
 ```
 This creates a file: config/csvimport.php
 ```php
